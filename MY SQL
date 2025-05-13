@@ -1,0 +1,1010 @@
+import sqlite3
+import pandas as pd
+from datetime import datetime
+# Connect to (or create) the database
+conn = sqlite3.connect('smart_clinic.db')
+cursor = conn.cursor()
+
+# Create Patients table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Patients (
+    patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    gender TEXT,
+    contact_info TEXT,
+    address TEXT,
+    registration_date TEXT
+)
+''')
+
+# Create Treatments table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Treatments (
+    treatment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER,
+    diagnosis TEXT,
+    treatment_description TEXT,
+    prescribed_by TEXT,
+    treatment_date TEXT,
+    FOREIGN KEY(patient_id) REFERENCES Patients(patient_id)
+)
+''')
+
+# Create AI_Models table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS AI_Models (
+    model_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name TEXT,
+    disease_detected TEXT,
+    model_version TEXT,
+    last_updated TEXT
+)
+''')
+
+# Create AI_Results table
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS AI_Results (
+    result_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER,
+    model_name TEXT,
+    input_data_reference TEXT,
+    result TEXT,
+    confidence_score REAL,
+    timestamp TEXT,
+    FOREIGN KEY(patient_id) REFERENCES Patients(patient_id)
+)
+''')
+
+conn.commit()
+def add_patient(name, age, gender, contact, address):
+    registration_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO Patients (name, age, gender, contact_info, address, registration_date) VALUES (?, ?, ?, ?, ?, ?)", 
+                   (name, age, gender, contact, address, registration_date))
+    conn.commit()
+
+add_patient("Alice", 28, "Female", "1234567890", "123 Street Name")
+
+# ✅ Step 1: Import Libraries
+import sqlite3
+import pandas as pd
+from datetime import datetime
+
+# ✅ Step 2: Connect to Database
+conn = sqlite3.connect("smart_clinic.db")  # creates file-based DB
+cursor = conn.cursor()
+
+# ✅ Step 3: Create Tables
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Patients (
+    patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT,
+    age INTEGER,
+    gender TEXT,
+    contact_info TEXT,
+    address TEXT,
+    registration_date TEXT
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS Treatments (
+    treatment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER,
+    diagnosis TEXT,
+    treatment_description TEXT,
+    prescribed_by TEXT,
+    treatment_date TEXT,
+    FOREIGN KEY(patient_id) REFERENCES Patients(patient_id)
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS AI_Models (
+    model_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    model_name TEXT,
+    disease_detected TEXT,
+    model_version TEXT,
+    last_updated TEXT
+)
+''')
+
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS AI_Results (
+    result_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER,
+    model_name TEXT,
+    input_data_reference TEXT,
+    result TEXT,
+    confidence_score REAL,
+    timestamp TEXT,
+    FOREIGN KEY(patient_id) REFERENCES Patients(patient_id)
+)
+''')
+
+conn.commit()
+print("✅ Tables created successfully")
+# ✅ Add Patient
+def add_patient(name, age, gender, contact, address):
+    registration_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO Patients (name, age, gender, contact_info, address, registration_date) VALUES (?, ?, ?, ?, ?, ?)", 
+                   (name, age, gender, contact, address, registration_date))
+    conn.commit()
+    print(f"✅ Patient {name} added successfully")
+
+# ✅ Add AI Result
+def record_ai_result(patient_id, model_name, input_data_reference, result, confidence_score):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO AI_Results (patient_id, model_name, input_data_reference, result, confidence_score, timestamp) VALUES (?, ?, ?, ?, ?, ?)", 
+                   (patient_id, model_name, input_data_reference, result, confidence_score, timestamp))
+    conn.commit()
+    print(f"✅ AI result for patient ID {patient_id} recorded successfully")
+# ✅ View all patients
+def view_all_patients():
+    df = pd.read_sql_query("SELECT * FROM Patients", conn)
+    return df
+
+# ✅ View all AI results for a patient
+def view_ai_results(patient_id):
+    df = pd.read_sql_query(f"SELECT * FROM AI_Results WHERE patient_id = {patient_id}", conn)
+    return df
+# Insert a test patient
+add_patient("John Doe", 35, "Male", "9876543210", "456 Clinic Road")
+
+# Insert a test AI result
+record_ai_result(1, "Skin Cancer Detector", "uploads/skin_01.jpg", "Benign", 0.87)
+
+# View inserted patient data
+print("📋 All Patients:")
+display(view_all_patients())
+
+# View AI result for patient 1
+print("🤖 AI Results for Patient ID 1:")
+display(view_ai_results(1))
+# Export tables to CSV
+view_all_patients().to_csv("Patients.csv", index=False)
+view_ai_results(1).to_csv("AI_Results_Patient1.csv", index=False)
+print("📁 CSV files saved in working directory")
+import gradio as gr
+
+# ----------------- Patient Entry -----------------
+def add_patient_ui(name, age, gender, contact, address):
+    try:
+        add_patient(name, int(age), gender, contact, address)
+        return "✅ Patient added successfully!"
+    except Exception as e:
+        return f"❌ Error: {e}"
+
+# ----------------- AI Result Entry -----------------
+def add_ai_result_ui(patient_id, model_name, image, result, confidence_score):
+    try:
+        # Save uploaded image to file
+        image_path = f"uploads/patient_{patient_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.jpg"
+        image.save(image_path)
+
+        record_ai_result(int(patient_id), model_name, image_path, result, float(confidence_score))
+        return "✅ AI result recorded successfully!"
+    except Exception as e:
+        return f"❌ Error: {e}"
+
+# ----------------- View Patients -----------------
+def view_patients_ui():
+    return view_all_patients()
+
+# ----------------- View AI Results -----------------
+def view_results_ui(patient_id):
+    try:
+        return view_ai_results(int(patient_id))
+    except:
+        return pd.DataFrame(columns=["Error"], data=[["Invalid Patient ID"]])
+with gr.Blocks(title="🧠 Smart Clinic DBMS") as demo:
+    gr.Markdown("## 🧠 AI Smart Clinic Database System")
+
+    with gr.Tab("➕ Add Patient"):
+        name = gr.Textbox(label="Name")
+        age = gr.Textbox(label="Age")
+        gender = gr.Dropdown(["Male", "Female", "Other"], label="Gender")
+        contact = gr.Textbox(label="Contact Info")
+        address = gr.Textbox(label="Address")
+        add_btn = gr.Button("Add Patient")
+        add_output = gr.Textbox(label="Output")
+        add_btn.click(add_patient_ui, inputs=[name, age, gender, contact, address], outputs=add_output)
+
+    with gr.Tab("🤖 Add AI Result"):
+        patient_id_input = gr.Textbox(label="Patient ID")
+        model_name = gr.Textbox(label="Model Name (e.g., Skin Cancer Detector)")
+        image = gr.Image(type="pil", label="Upload Input Image")
+        result = gr.Textbox(label="AI Result (e.g., Benign, Malignant)")
+        confidence = gr.Textbox(label="Confidence Score (e.g., 0.93)")
+        result_btn = gr.Button("Record AI Result")
+        result_output = gr.Textbox(label="Output")
+        result_btn.click(add_ai_result_ui, inputs=[patient_id_input, model_name, image, result, confidence], outputs=result_output)
+
+    with gr.Tab("📋 View All Patients"):
+        view_btn = gr.Button("Show Patients")
+        patients_table = gr.Dataframe()
+        view_btn.click(view_patients_ui, outputs=patients_table)
+
+    with gr.Tab("📈 View AI Results"):
+        result_patient_id = gr.Textbox(label="Enter Patient ID to View Results")
+        results_output = gr.Dataframe()
+        result_btn = gr.Button("Show AI Results")
+        result_btn.click(view_results_ui, inputs=result_patient_id, outputs=results_output)
+
+demo.launch()
+import sqlite3
+from datetime import datetime
+
+conn = sqlite3.connect("hospital.db")
+cursor = conn.cursor()
+
+# Patient Table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS patients (
+    patient_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT, age INTEGER, gender TEXT,
+    contact TEXT, address TEXT,
+    status TEXT DEFAULT 'Admitted',
+    admission_date TEXT, discharge_date TEXT
+)
+""")
+
+# Doctor Table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS doctors (
+    doctor_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT, specialization TEXT,
+    contact TEXT
+)
+""")
+
+# Appointment Table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS appointments (
+    appointment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, doctor_id INTEGER,
+    date TEXT, time TEXT,
+    FOREIGN KEY(patient_id) REFERENCES patients(patient_id),
+    FOREIGN KEY(doctor_id) REFERENCES doctors(doctor_id)
+)
+""")
+
+# Billing Table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS billing (
+    bill_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, amount REAL,
+    description TEXT, date TEXT,
+    FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
+)
+""")
+
+# AI Results Table
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS ai_results (
+    result_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, model_name TEXT,
+    result TEXT, confidence REAL,
+    timestamp TEXT,
+    FOREIGN KEY(patient_id) REFERENCES patients(patient_id)
+)
+""")
+
+conn.commit()
+conn.close()
+def admit_patient(name, age, gender, contact, address):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    date = datetime.now().strftime("%Y-%m-%d")
+    cursor.execute("INSERT INTO patients (name, age, gender, contact, address, admission_date) VALUES (?, ?, ?, ?, ?, ?)",
+                   (name, age, gender, contact, address, date))
+    conn.commit()
+    conn.close()
+    return "✅ Patient admitted!"
+
+def discharge_patient(patient_id):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    date = datetime.now().strftime("%Y-%m-%d")
+    cursor.execute("UPDATE patients SET status='Discharged', discharge_date=? WHERE patient_id=?",
+                   (date, patient_id))
+    conn.commit()
+    conn.close()
+    return "✅ Patient discharged!"
+
+def add_doctor(name, specialization, contact):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO doctors (name, specialization, contact) VALUES (?, ?, ?)",
+                   (name, specialization, contact))
+    conn.commit()
+    conn.close()
+    return "✅ Doctor added!"
+
+def assign_appointment(patient_id, doctor_id, date, time):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO appointments (patient_id, doctor_id, date, time) VALUES (?, ?, ?, ?)",
+                   (patient_id, doctor_id, date, time))
+    conn.commit()
+    conn.close()
+    return "✅ Appointment booked!"
+
+def add_bill(patient_id, amount, description):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    date = datetime.now().strftime("%Y-%m-%d")
+    cursor.execute("INSERT INTO billing (patient_id, amount, description, date) VALUES (?, ?, ?, ?)",
+                   (patient_id, amount, description, date))
+    conn.commit()
+    conn.close()
+    return "✅ Bill recorded!"
+
+def add_ai_result(patient_id, model_name, result, confidence):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cursor.execute("INSERT INTO ai_results (patient_id, model_name, result, confidence, timestamp) VALUES (?, ?, ?, ?, ?)",
+                   (patient_id, model_name, result, confidence, timestamp))
+    conn.commit()
+    conn.close()
+    return "✅ AI result saved!"
+!pip install gradio
+import gradio as gr
+import sqlite3
+
+# Function to fetch patients
+def get_patients():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT patient_id, name FROM patients WHERE status='Admitted'")
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
+# Function to fetch doctors
+def get_doctors():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT doctor_id, name FROM doctors")
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
+### Interfaces
+
+# Admit Patient
+def admit_interface(name, age, gender, contact, address):
+    return admit_patient(name, int(age), gender, contact, address)
+
+# Discharge Patient
+def discharge_interface(patient_id):
+    return discharge_patient(int(patient_id))
+
+# Add Doctor
+def add_doctor_interface(name, specialization, contact):
+    return add_doctor(name, specialization, contact)
+
+# Assign Appointment
+def appointment_interface(patient_id, doctor_id, date, time):
+    return assign_appointment(int(patient_id), int(doctor_id), date, time)
+
+# Add Billing
+def bill_interface(patient_id, amount, description):
+    return add_bill(int(patient_id), float(amount), description)
+
+# Add AI Result
+def ai_result_interface(patient_id, model_name, result, confidence):
+    return add_ai_result(int(patient_id), model_name, result, float(confidence))
+
+# GUI Layout
+with gr.Blocks(title="🏥 Smart Hospital Management System") as demo:
+    gr.Markdown("# 🏥 Hospital Management Dashboard")
+
+    with gr.Tab("➕ Admit Patient"):
+        name = gr.Textbox(label="Name")
+        age = gr.Number(label="Age")
+        gender = gr.Radio(["Male", "Female", "Other"], label="Gender")
+        contact = gr.Textbox(label="Contact")
+        address = gr.Textbox(label="Address")
+        btn_admit = gr.Button("Admit")
+        output_admit = gr.Textbox(label="Status")
+        btn_admit.click(admit_interface, [name, age, gender, contact, address], output_admit)
+
+    with gr.Tab("🏠 Discharge Patient"):
+        patient_id_d = gr.Number(label="Patient ID")
+        btn_discharge = gr.Button("Discharge")
+        output_discharge = gr.Textbox(label="Status")
+        btn_discharge.click(discharge_interface, [patient_id_d], output_discharge)
+
+    with gr.Tab("👨‍⚕️ Add Doctor"):
+        doc_name = gr.Textbox(label="Name")
+        specialization = gr.Textbox(label="Specialization")
+        doc_contact = gr.Textbox(label="Contact")
+        btn_doc = gr.Button("Add Doctor")
+        output_doc = gr.Textbox(label="Status")
+        btn_doc.click(add_doctor_interface, [doc_name, specialization, doc_contact], output_doc)
+
+    with gr.Tab("📅 Book Appointment"):
+        patient_id_a = gr.Number(label="Patient ID")
+        doctor_id_a = gr.Number(label="Doctor ID")
+        date = gr.Textbox(label="Date (YYYY-MM-DD)")
+        time = gr.Textbox(label="Time (HH:MM)")
+        btn_appoint = gr.Button("Book Appointment")
+        output_appoint = gr.Textbox(label="Status")
+        btn_appoint.click(appointment_interface, [patient_id_a, doctor_id_a, date, time], output_appoint)
+
+    with gr.Tab("💰 Generate Bill"):
+        patient_id_b = gr.Number(label="Patient ID")
+        amount = gr.Number(label="Amount (₹)")
+        description = gr.Textbox(label="Description")
+        btn_bill = gr.Button("Generate Bill")
+        output_bill = gr.Textbox(label="Status")
+        btn_bill.click(bill_interface, [patient_id_b, amount, description], output_bill)
+
+    with gr.Tab("🤖 Save AI Tool Result"):
+        patient_id_r = gr.Number(label="Patient ID")
+        model_name = gr.Textbox(label="Model Name")
+        result = gr.Textbox(label="Diagnosis Result")
+        confidence = gr.Number(label="Confidence %")
+        btn_ai = gr.Button("Save Result")
+        output_ai = gr.Textbox(label="Status")
+        btn_ai.click(ai_result_interface, [patient_id_r, model_name, result, confidence], output_ai)
+
+demo.launch()
+def view_table_data(table):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table}")
+    data = cursor.fetchall()
+    conn.close()
+    return str(data) if data else "No data found."
+import sqlite3
+import gradio as gr
+from datetime import datetime
+
+# ----------- DATABASE SETUP -------------
+conn = sqlite3.connect("hospital.db")
+cursor = conn.cursor()
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS patients (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT, age INTEGER, gender TEXT, disease TEXT,
+    admission_date TEXT, discharge_date TEXT
+)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS doctors (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT, specialization TEXT, phone TEXT
+)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS appointments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, doctor_id INTEGER,
+    date TEXT, time TEXT
+)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS billing (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, total_amount REAL,
+    paid REAL, due REAL
+)''')
+
+cursor.execute('''CREATE TABLE IF NOT EXISTS ai_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id INTEGER, ai_tool TEXT,
+    result TEXT, date TEXT
+)''')
+
+conn.commit()
+conn.close()
+
+# ------------ BACKEND FUNCTIONS -------------
+def admit_patient(name, age, gender, disease):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO patients (name, age, gender, disease, admission_date) VALUES (?, ?, ?, ?, ?)",
+                   (name, age, gender, disease, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    conn.commit()
+    conn.close()
+    return "Patient Admitted Successfully"
+
+def discharge_patient(patient_id):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("UPDATE patients SET discharge_date = ? WHERE id = ?",
+                   (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), patient_id))
+    conn.commit()
+    conn.close()
+    return "Patient Discharged Successfully"
+
+def add_doctor(name, specialization, phone):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO doctors (name, specialization, phone) VALUES (?, ?, ?)",
+                   (name, specialization, phone))
+    conn.commit()
+    conn.close()
+    return "Doctor Added Successfully"
+
+def create_appointment(patient_id, doctor_id, date, time):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO appointments (patient_id, doctor_id, date, time) VALUES (?, ?, ?, ?)",
+                   (patient_id, doctor_id, date, time))
+    conn.commit()
+    conn.close()
+    return "Appointment Created Successfully"
+
+def generate_bill(patient_id, total, paid):
+    due = total - paid
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO billing (patient_id, total_amount, paid, due) VALUES (?, ?, ?, ?)",
+                   (patient_id, total, paid, due))
+    conn.commit()
+    conn.close()
+    return f"Bill Generated. Due: Rs.{due}"
+
+def log_ai_result(patient_id, tool, result):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO ai_results (patient_id, ai_tool, result, date) VALUES (?, ?, ?, ?)",
+                   (patient_id, tool, result, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    conn.commit()
+    conn.close()
+    return "AI Result Logged"
+
+def view_table_data(table):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table}")
+    data = cursor.fetchall()
+    conn.close()
+    return str(data) if data else "No data found."
+
+# ------------- GRADIO DASHBOARD -------------
+with gr.Blocks(title="🏥 Smart Hospital Management System") as demo:
+    gr.Markdown("## 🏥 Smart Hospital Management Dashboard")
+
+    with gr.Tab("➕ Admit Patient"):
+        name = gr.Text(label="Name")
+        age = gr.Number(label="Age")
+        gender = gr.Radio(["Male", "Female", "Other"], label="Gender")
+        disease = gr.Text(label="Disease")
+        admit_btn = gr.Button("Admit")
+        admit_output = gr.Textbox(label="Output")
+        admit_btn.click(fn=admit_patient, inputs=[name, age, gender, disease], outputs=admit_output)
+
+    with gr.Tab("🏁 Discharge Patient"):
+        patient_id = gr.Number(label="Patient ID")
+        discharge_btn = gr.Button("Discharge")
+        discharge_output = gr.Textbox(label="Output")
+        discharge_btn.click(fn=discharge_patient, inputs=[patient_id], outputs=discharge_output)
+
+    with gr.Tab("👨‍⚕️ Add Doctor"):
+        doc_name = gr.Text(label="Doctor Name")
+        specialization = gr.Text(label="Specialization")
+        phone = gr.Text(label="Phone Number")
+        doc_btn = gr.Button("Add Doctor")
+        doc_output = gr.Textbox(label="Output")
+        doc_btn.click(fn=add_doctor, inputs=[doc_name, specialization, phone], outputs=doc_output)
+
+    with gr.Tab("📅 Create Appointment"):
+        pid = gr.Number(label="Patient ID")
+        did = gr.Number(label="Doctor ID")
+        app_date = gr.Text(label="Date (YYYY-MM-DD)")
+        app_time = gr.Text(label="Time (HH:MM)")
+        appoint_btn = gr.Button("Create Appointment")
+        appoint_output = gr.Textbox(label="Output")
+        appoint_btn.click(fn=create_appointment, inputs=[pid, did, app_date, app_time], outputs=appoint_output)
+
+    with gr.Tab("💰 Billing"):
+        bid = gr.Number(label="Patient ID")
+        total = gr.Number(label="Total Amount")
+        paid = gr.Number(label="Paid")
+        bill_btn = gr.Button("Generate Bill")
+        bill_output = gr.Textbox(label="Output")
+        bill_btn.click(fn=generate_bill, inputs=[bid, total, paid], outputs=bill_output)
+
+    with gr.Tab("🤖 Log AI Result"):
+        ai_pid = gr.Number(label="Patient ID")
+        ai_tool = gr.Text(label="AI Tool Used")
+        ai_result = gr.Textbox(label="Result")
+        ai_btn = gr.Button("Log Result")
+        ai_output = gr.Textbox(label="Output")
+        ai_btn.click(fn=log_ai_result, inputs=[ai_pid, ai_tool, ai_result], outputs=ai_output)
+
+    with gr.Tab("📋 View Records"):
+        gr.Markdown("### View Data from the Hospital System")
+        table_dropdown = gr.Dropdown(choices=["patients", "doctors", "appointments", "billing", "ai_results"], label="Select Table to View")
+        btn_view = gr.Button("View Table")
+        output_view = gr.Textbox(label="Table Data", lines=10)
+        btn_view.click(fn=view_table_data, inputs=[table_dropdown], outputs=output_view)
+
+# Run the app
+demo.launch()
+import sqlite3
+import gradio as gr
+
+# ---------- DATABASE SETUP ----------
+def init_db():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        age INTEGER,
+        gender TEXT,
+        disease TEXT,
+        admitted_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS doctors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        specialization TEXT
+    )""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER,
+        doctor_id INTEGER,
+        appointment_date TEXT,
+        FOREIGN KEY(patient_id) REFERENCES patients(id),
+        FOREIGN KEY(doctor_id) REFERENCES doctors(id)
+    )""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS billing (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER,
+        amount REAL,
+        billing_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patient_id) REFERENCES patients(id)
+    )""")
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS ai_tools (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        patient_id INTEGER,
+        tool_name TEXT,
+        result TEXT,
+        used_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(patient_id) REFERENCES patients(id)
+    )""")
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# ---------- FUNCTIONS ----------
+def admit_patient(name, age, gender, disease):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO patients (name, age, gender, disease) VALUES (?, ?, ?, ?)",
+                   (name, age, gender, disease))
+    conn.commit()
+    conn.close()
+    return "✅ Patient Admitted Successfully!"
+
+def register_doctor(name, specialization):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO doctors (name, specialization) VALUES (?, ?)",
+                   (name, specialization))
+    conn.commit()
+    conn.close()
+    return "✅ Doctor Registered Successfully!"
+
+def schedule_appointment(patient_id, doctor_id, date):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO appointments (patient_id, doctor_id, appointment_date) VALUES (?, ?, ?)",
+                   (patient_id, doctor_id, date))
+    conn.commit()
+    conn.close()
+    return "✅ Appointment Scheduled!"
+
+def generate_bill(patient_id, amount):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO billing (patient_id, amount) VALUES (?, ?)",
+                   (patient_id, amount))
+    conn.commit()
+    conn.close()
+    return "✅ Billing Entry Added!"
+
+def log_ai_tool_result(patient_id, tool_name, result):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO ai_tools (patient_id, tool_name, result) VALUES (?, ?, ?)",
+                   (patient_id, tool_name, result))
+    conn.commit()
+    conn.close()
+    return "✅ AI Tool Result Logged!"
+
+def view_table_data(table_name):
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table_name}")
+    data = cursor.fetchall()
+    conn.close()
+    return "\n".join(str(row) for row in data) if data else "No data found."
+
+# ---------- GRADIO INTERFACE ----------
+with gr.Blocks() as demo:
+    gr.Markdown("## 🏥 Smart Hospital Management System")
+
+    with gr.Tab("➕ Admit Patient"):
+        name = gr.Textbox(label="Patient Name")
+        age = gr.Number(label="Age")
+        gender = gr.Dropdown(["Male", "Female", "Other"], label="Gender")
+        disease = gr.Textbox(label="Disease")
+        admit_btn = gr.Button("Admit")
+        admit_output = gr.Textbox(label="Output")
+        admit_btn.click(fn=admit_patient, inputs=[name, age, gender, disease], outputs=admit_output)
+
+    with gr.Tab("👨‍⚕️ Register Doctor"):
+        doc_name = gr.Textbox(label="Doctor Name")
+        specialization = gr.Textbox(label="Specialization")
+        register_btn = gr.Button("Register")
+        register_output = gr.Textbox(label="Output")
+        register_btn.click(fn=register_doctor, inputs=[doc_name, specialization], outputs=register_output)
+
+    with gr.Tab("📅 Schedule Appointment"):
+        app_patient_id = gr.Number(label="Patient ID")
+        app_doctor_id = gr.Number(label="Doctor ID")
+        app_date = gr.Textbox(label="Appointment Date (YYYY-MM-DD)")
+        app_btn = gr.Button("Schedule")
+        app_output = gr.Textbox(label="Output")
+        app_btn.click(fn=schedule_appointment, inputs=[app_patient_id, app_doctor_id, app_date], outputs=app_output)
+
+    with gr.Tab("💳 Billing"):
+        bill_patient_id = gr.Number(label="Patient ID")
+        bill_amount = gr.Number(label="Amount")
+        bill_btn = gr.Button("Generate Bill")
+        bill_output = gr.Textbox(label="Output")
+        bill_btn.click(fn=generate_bill, inputs=[bill_patient_id, bill_amount], outputs=bill_output)
+
+    with gr.Tab("🤖 Log AI Tool Result"):
+        ai_patient_id = gr.Number(label="Patient ID")
+        ai_tool = gr.Textbox(label="Tool Name")
+        ai_result = gr.Textbox(label="Result")
+        ai_btn = gr.Button("Log Result")
+        ai_output = gr.Textbox(label="Output")
+        ai_btn.click(fn=log_ai_tool_result, inputs=[ai_patient_id, ai_tool, ai_result], outputs=ai_output)
+
+    with gr.Tab("📋 View Table"):
+        table_dropdown = gr.Dropdown(["patients", "doctors", "appointments", "billing", "ai_tools"], label="Select Table")
+        btn_view = gr.Button("View Table")
+        output_view = gr.Textbox(label="Table Data", lines=10)
+        btn_view.click(view_table_data, inputs=[table_dropdown], outputs=output_view)
+
+demo.launch()
+import sqlite3
+
+# Check if the 'patients' table exists and view the structure
+def check_table_structure():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(patients);")
+    data = cursor.fetchall()
+    conn.close()
+    return data
+
+# Run this to view the table structure
+check_table_structure()
+import sqlite3
+
+# Add missing 'disease' column to the 'patients' table
+def add_disease_column():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("ALTER TABLE patients ADD COLUMN disease TEXT")
+        conn.commit()
+        conn.close()
+        return "✅ Disease column added successfully!"
+    except Exception as e:
+        conn.close()
+        return f"❌ Error: {str(e)}"
+
+# Run this to add the disease column
+add_disease_column()
+manual_patient_insert()
+manual_patient_insert()
+# View data in the 'patients' table
+def view_patients():
+    conn = sqlite3.connect("hospital.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM patients")
+    data = cursor.fetchall()
+    conn.close()
+    return data if data else "No data found."
+
+# Run this to check if the patient is inserted correctly
+view_patients()
+import sqlite3
+import gradio as gr
+
+# Connect to SQLite database
+def connect_db():
+    conn = sqlite3.connect("hospital.db")
+    return conn
+
+# Create necessary tables
+def create_tables():
+    conn = connect_db()
+    cursor = conn.cursor()
+
+    # Create patients table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS patients (
+                        id INTEGER PRIMARY KEY,
+                        name TEXT,
+                        age INTEGER,
+                        gender TEXT,
+                        disease TEXT)''')
+
+    # Create doctors table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS doctors (
+                        id INTEGER PRIMARY KEY,
+                        name TEXT,
+                        specialty TEXT)''')
+
+    # Create appointments table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS appointments (
+                        id INTEGER PRIMARY KEY,
+                        patient_id INTEGER,
+                        doctor_id INTEGER,
+                        appointment_date TEXT,
+                        FOREIGN KEY(patient_id) REFERENCES patients(id),
+                        FOREIGN KEY(doctor_id) REFERENCES doctors(id))''')
+
+    # Create billing table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS billing (
+                        id INTEGER PRIMARY KEY,
+                        patient_id INTEGER,
+                        amount REAL,
+                        FOREIGN KEY(patient_id) REFERENCES patients(id))''')
+
+    # Create AI tool results table
+    cursor.execute('''CREATE TABLE IF NOT EXISTS ai_results (
+                        id INTEGER PRIMARY KEY,
+                        patient_id INTEGER,
+                        result TEXT,
+                        tool_used TEXT,
+                        FOREIGN KEY(patient_id) REFERENCES patients(id))''')
+
+    conn.commit()
+    conn.close()
+
+# Admit a new patient
+def admit_patient(name, age, gender, disease):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO patients (name, age, gender, disease) VALUES (?, ?, ?, ?)",
+                   (name, age, gender, disease))
+    conn.commit()
+    conn.close()
+    return f"✅ Patient {name} admitted successfully!"
+
+# Register a doctor
+def register_doctor(name, specialty):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO doctors (name, specialty) VALUES (?, ?)", (name, specialty))
+    conn.commit()
+    conn.close()
+    return f"✅ Doctor {name} registered successfully!"
+
+# Schedule an appointment
+def schedule_appointment(patient_id, doctor_id, appointment_date):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO appointments (patient_id, doctor_id, appointment_date) VALUES (?, ?, ?)",
+                   (patient_id, doctor_id, appointment_date))
+    conn.commit()
+    conn.close()
+    return f"✅ Appointment scheduled successfully for Patient {patient_id} with Doctor {doctor_id} on {appointment_date}."
+
+# Create a billing entry
+def create_billing(patient_id, amount):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO billing (patient_id, amount) VALUES (?, ?)", (patient_id, amount))
+    conn.commit()
+    conn.close()
+    return f"✅ Billing entry created for Patient {patient_id} with amount {amount}."
+
+# Log AI tool results
+def log_ai_results(patient_id, result, tool_used):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO ai_results (patient_id, result, tool_used) VALUES (?, ?, ?)", 
+                   (patient_id, result, tool_used))
+    conn.commit()
+    conn.close()
+    return f"✅ AI results logged for Patient {patient_id} using tool {tool_used}."
+
+# View table data
+def view_table_data(table_name):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT * FROM {table_name}")
+    data = cursor.fetchall()
+    conn.close()
+    return data if data else "No data found."
+
+# Gradio Interface
+def gradio_interface():
+    with gr.Blocks() as demo:
+        # Patient Admission
+        with gr.Tab("Admit Patient"):
+            with gr.Row():
+                name_input = gr.Textbox(label="Patient Name")
+                age_input = gr.Number(label="Age")
+                gender_input = gr.Radio(choices=["Male", "Female", "Other"], label="Gender")
+                disease_input = gr.Textbox(label="Disease")
+            admit_button = gr.Button("Admit Patient")
+            admit_output = gr.Textbox(label="Admission Status")
+            admit_button.click(admit_patient, [name_input, age_input, gender_input, disease_input], admit_output)
+
+        # Doctor Registration
+        with gr.Tab("Register Doctor"):
+            with gr.Row():
+                doctor_name_input = gr.Textbox(label="Doctor Name")
+                specialty_input = gr.Textbox(label="Specialty")
+            register_button = gr.Button("Register Doctor")
+            register_output = gr.Textbox(label="Registration Status")
+            register_button.click(register_doctor, [doctor_name_input, specialty_input], register_output)
+
+        # Schedule Appointment
+        with gr.Tab("Schedule Appointment"):
+            with gr.Row():
+                patient_id_input = gr.Number(label="Patient ID")
+                doctor_id_input = gr.Number(label="Doctor ID")
+                appointment_date_input = gr.Textbox(label="Appointment Date (Format: YYYY-MM-DD)")
+            schedule_button = gr.Button("Schedule Appointment")
+            schedule_output = gr.Textbox(label="Appointment Status")
+            schedule_button.click(schedule_appointment, [patient_id_input, doctor_id_input, appointment_date_input], schedule_output)
+
+        # Create Billing
+        with gr.Tab("Create Billing"):
+            with gr.Row():
+                billing_patient_id_input = gr.Number(label="Patient ID")
+                billing_amount_input = gr.Number(label="Amount")
+            billing_button = gr.Button("Create Billing")
+            billing_output = gr.Textbox(label="Billing Status")
+            billing_button.click(create_billing, [billing_patient_id_input, billing_amount_input], billing_output)
+
+        # Log AI Tool Results
+        with gr.Tab("Log AI Tool Results"):
+            with gr.Row():
+                ai_patient_id_input = gr.Number(label="Patient ID")
+                ai_result_input = gr.Textbox(label="AI Result")
+                ai_tool_input = gr.Textbox(label="AI Tool Used")
+            ai_button = gr.Button("Log AI Result")
+            ai_output = gr.Textbox(label="AI Result Status")
+            ai_button.click(log_ai_results, [ai_patient_id_input, ai_result_input, ai_tool_input], ai_output)
+
+        # View Table Data
+        with gr.Tab("View Table"):
+            table_dropdown = gr.Dropdown(choices=["patients", "doctors", "appointments", "billing", "ai_results"], label="Select Table")
+            view_button = gr.Button("View Table")
+            output_view = gr.Textbox(label="Table Data", lines=10)
+            view_button.click(view_table_data, [table_dropdown], output_view)
+
+    return demo
+
+# Launch the app
+create_tables()  # Create tables if they don't exist
+demo = gradio_interface()
+demo.launch()
+
+
